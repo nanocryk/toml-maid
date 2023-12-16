@@ -5,6 +5,7 @@ use {
         cmp::Ordering,
         collections::BTreeMap,
         error::Error,
+        ffi::OsString,
         fs::File,
         io::Write,
         path::{Path, PathBuf},
@@ -26,13 +27,23 @@ struct Entry<T> {
 #[derive(StructOpt, Debug)]
 pub struct Opt {
     /// List of .toml files to format.
+    /// If no files are provided, and `--scan-folder` is not used then
+    /// it will scan for all .toml files in the current directory.
     #[structopt(name = "FILE", parse(from_os_str))]
     pub files: Vec<PathBuf>,
+
+    /// Scan provided folder(s) recursively for .toml files.
+    #[structopt(long, parse(from_os_str))]
+    pub folder: Vec<PathBuf>,
 
     /// Only check the formatting, returns an error if the file is not formatted.
     /// If not provide the files will be overritten.
     #[structopt(short, long)]
     pub check: bool,
+
+    /// Disables verbose messages.
+    #[structopt(short, long)]
+    pub silent: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -56,7 +67,7 @@ pub struct Config {
     pub sort_string_arrays: bool,
 }
 
-const CONFIG_FILE: &'static str = "toml-sort.toml";
+const CONFIG_FILE: &'static str = "toms-maid.toml";
 
 impl Config {
     pub fn read_from_file() -> Option<Config> {
@@ -121,9 +132,65 @@ fn absolute_path(path: impl AsRef<Path>) -> Res<String> {
     Ok(std::fs::canonicalize(&path)?.to_string_lossy().to_string())
 }
 
+pub fn find_files_recursively(
+    path: impl AsRef<Path>,
+    extension: &str,
+    verbose: bool,
+) -> Vec<PathBuf> {
+    macro_rules! continue_on_err {
+        ($in:expr, $context:expr) => {
+            match $in {
+                Ok(e) => e,
+                Err(e) => {
+                    if verbose {
+                        eprintln!("Error while {}: {}", $context, e);
+                    }
+                    continue;
+                }
+            }
+        };
+    }
+
+    let path: PathBuf = path.as_ref().to_owned();
+    let mut matches = vec![];
+    let mut pending_directories = vec![path];
+    let extension: OsString = extension.into();
+    let config_file: OsString = CONFIG_FILE.into();
+
+    while let Some(dir_path) = pending_directories.pop() {
+        let entries = continue_on_err!(std::fs::read_dir(&dir_path), "reading directory");
+
+        for entry in entries {
+            let entry = continue_on_err!(entry, "getting file info");
+            let file_type = continue_on_err!(entry.file_type(), "getting file type");
+            let path = entry.path();
+
+            // If directory, we add it to the list of pending directories
+            if file_type.is_dir() {
+                pending_directories.push(path);
+                continue;
+            }
+
+            // We ignore non .toml files
+            if path.extension() != Some(&extension) {
+                continue;
+            }
+
+            // We don't format `toms-maid.toml` files as the order is important.
+            if path.file_name() == Some(&config_file) {
+                continue;
+            }
+
+            matches.push(path);
+        }
+    }
+
+    matches
+}
+
 impl ProcessedConfig {
     /// Process the provided file.
-    pub fn process_file(&self, path: impl AsRef<Path>, check: bool) -> Res<()> {
+    pub fn process_file(&self, path: impl AsRef<Path>, check: bool, verbose: bool) -> Res<()> {
         let absolute_path = absolute_path(&path)?;
         let text = std::fs::read_to_string(&path).unwrap_or_else(|e| {
             eprintln!(
@@ -146,7 +213,7 @@ impl ProcessedConfig {
             if text != output_text {
                 eprintln!("Check fails : {}", absolute_path.red());
                 std::process::exit(2);
-            } else {
+            } else if verbose {
                 println!("Check succeed: {}", absolute_path.green());
             }
         } else {
@@ -154,8 +221,10 @@ impl ProcessedConfig {
                 let mut file = File::create(&path)?;
                 file.write_all(output_text.as_bytes())?;
                 file.flush()?;
-                println!("Overwritten: {}", absolute_path.blue());
-            } else {
+                if verbose {
+                    println!("Overwritten: {}", absolute_path.blue());
+                }
+            } else if verbose {
                 println!("Unchanged: {}", absolute_path.green());
             }
         }

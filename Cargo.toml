@@ -1,9 +1,8 @@
 [package]
-name = "toms-maid"
 authors = [ "nanocryk" ]
 edition = "2021"
+name = "toms-maid"
 version = "0.1.0"
-
 [dependencies]
 # Config loading
 serde = { version = "1.0.130", features = [ "derive" ] }

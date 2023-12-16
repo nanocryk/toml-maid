@@ -1,9 +1,9 @@
 keys = [
-	"dependencies",
 	"package",
+	"dependencies",
 ]
 
 inline_keys = [
-	"features",
 	"version",
+	"features",
 ]
