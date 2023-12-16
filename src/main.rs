@@ -10,11 +10,14 @@ fn main() -> Res<()> {
     let mut opt = Opt::from_args();
 
     let config = Config::read_from_file().unwrap_or_else(|| {
-        println!(
-            "{}",
-            "No 'toml-sort.toml' in this directory and its parents, using default config.\n"
-                .yellow()
-        );
+        if !opt.silent {
+            println!(
+                "{}",
+                "No 'toms-maid.toml' in this directory and its parents, using default config.\n"
+                    .yellow()
+            );
+        }
+
         Config::default()
     });
 

@@ -47,18 +47,18 @@ pub struct Opt {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Config {
+pub struct GenericConfig<Keys> {
     /// Important keys in non-inline tables.
     /// Will be sorted first, then any non-important keys will be
     /// sorted lexicographically.
     #[serde(default)]
-    pub keys: Vec<String>,
+    pub keys: Keys,
 
     /// Important keys in inline tables.
     /// Will be sorted first, then any non-important keys will be
     /// sorted lexicographically.
     #[serde(default)]
-    pub inline_keys: Vec<String>,
+    pub inline_keys: Keys,
 
     /// Does it sort arrays?
     /// In case of mixed types, string will be ordered first, then
@@ -66,6 +66,9 @@ pub struct Config {
     #[serde(default)]
     pub sort_arrays: bool,
 }
+
+pub type Config = GenericConfig<Vec<String>>;
+pub type ProcessedConfig = GenericConfig<BTreeMap<String, usize>>;
 
 const CONFIG_FILE: &'static str = "toms-maid.toml";
 
@@ -89,23 +92,6 @@ impl Config {
             }
         }
     }
-}
-
-pub struct ProcessedConfig {
-    /// Important keys in non-inline tables.
-    /// Will be sorted first, then any non-important keys will be
-    /// sorted lexicographically.
-    pub keys: BTreeMap<String, usize>,
-
-    /// Important keys in non-inline tables.
-    /// Will be sorted first, then any non-important keys will be
-    /// sorted lexicographically.
-    pub inline_keys: BTreeMap<String, usize>,
-
-    /// Does it sort arrays of strings ?
-    /// In case of mixed types, string will be ordered first, then
-    /// other values in original order.
-    pub sort_arrays: bool,
 }
 
 impl From<Config> for ProcessedConfig {
@@ -420,8 +406,8 @@ impl ProcessedConfig {
 
                 // Convert simple '...' to "..."
                 // Doesn't modify strings starting with multiple ' as they
-                // Doesn't modify strings containing \ or "
                 // could be multiline literals.
+                // Doesn't modify strings containing \ or "
                 let mut display = v.clone().decorated("", "").to_string();
                 if display.starts_with("'")
                     && !display.starts_with("''")
@@ -492,7 +478,10 @@ impl ProcessedConfig {
 
         // Multiline array
         if multiline {
-            let mut trailing = format!("{}\n", array.trailing().trim_matches(&[' ', '\t'][..]).trim_end());
+            let mut trailing = format!(
+                "{}\n",
+                array.trailing().trim_matches(&[' ', '\t'][..]).trim_end()
+            );
 
             if !trailing.starts_with("\n") {
                 trailing = format!(" {trailing}");
@@ -527,7 +516,7 @@ impl ProcessedConfig {
                     .to_string();
 
                 // If the suffix is non-empty it is important to add a trailing
-                // new lien so that the comma is not part of a comment
+                // new line so that the comma is not part of a comment
                 if !suffix.is_empty() {
                     suffix.push('\n');
                 }
