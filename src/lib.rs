@@ -471,9 +471,34 @@ impl ProcessedConfig {
             new_array.push_formatted(value);
         }
 
+        let mut multiline = array.trailing().starts_with("\n");
+        if !multiline {
+            for item in array.iter() {
+                if let Some(prefix) = item.decor().prefix() {
+                    if prefix.contains("\n") {
+                        multiline = true;
+                        break;
+                    }
+                }
+
+                if let Some(suffix) = item.decor().suffix() {
+                    if suffix.contains("\n") {
+                        multiline = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // Multiline array
-        if array.trailing().starts_with("\n") {
-            new_array.set_trailing(array.trailing());
+        if multiline {
+            let mut trailing = format!("{}\n", array.trailing().trim_matches(&[' ', '\t'][..]).trim_end());
+
+            if !trailing.starts_with("\n") {
+                trailing = format!(" {trailing}");
+            }
+
+            new_array.set_trailing(&trailing);
             new_array.set_trailing_comma(true);
 
             for value in new_array.iter_mut() {
@@ -481,22 +506,34 @@ impl ProcessedConfig {
                     .decor()
                     .prefix()
                     .unwrap_or("")
-                    .trim_matches(&[' ', '\t', '\n'][..]);
+                    .trim_matches(&[' ', '\t'][..])
+                    .trim_end_matches('\n');
 
-                let prefix = if !prefix.is_empty() {
-                    format!("\n\t{}\n\t", prefix)
+                let mut prefix = if !prefix.is_empty() {
+                    format!("{}\n\t", prefix)
                 } else {
                     "\n\t".to_string()
                 };
 
-                let suffix = value
+                if !prefix.starts_with("\n") {
+                    prefix = format!(" {prefix}");
+                }
+
+                let mut suffix = value
                     .decor()
                     .suffix()
                     .unwrap_or("")
-                    .trim_matches(&[' ', '\t', '\n'][..]);
+                    .trim_matches(&[' ', '\t', '\n'][..])
+                    .to_string();
+
+                // If the suffix is non-empty it is important to add a trailing
+                // new lien so that the comma is not part of a comment
+                if !suffix.is_empty() {
+                    suffix.push('\n');
+                }
 
                 let formatted_value = self.format_value(&value, false)?;
-                *value = formatted_value.decorated(&prefix, suffix);
+                *value = formatted_value.decorated(&prefix, &suffix);
             }
         }
         // Inline array
