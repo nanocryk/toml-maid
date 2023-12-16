@@ -1,6 +1,8 @@
-use colored::*;
-use structopt::StructOpt;
-use toml_sort::{Config, Opt, ProcessedConfig, Res};
+use {
+    colored::*,
+    structopt::StructOpt,
+    toms_maid::{Config, Opt, ProcessedConfig, Res},
+};
 
 fn main() -> Res<()> {
     let opt = Opt::from_args();

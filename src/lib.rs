@@ -1,15 +1,17 @@
-use colored::*;
-use serde::{Deserialize, Serialize};
-use std::{
-    cmp::Ordering,
-    collections::BTreeMap,
-    error::Error,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
+use {
+    colored::*,
+    serde::{Deserialize, Serialize},
+    std::{
+        cmp::Ordering,
+        collections::BTreeMap,
+        error::Error,
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+    },
+    structopt::StructOpt,
+    toml_edit::{Array, Decor, Document, InlineTable, Item, Table, Value},
 };
-use structopt::StructOpt;
-use toml_edit::{Array, Decor, Document, InlineTable, Item, Table, Value};
 
 /// Type alias for shorter return types.
 pub type Res<T> = Result<T, Box<dyn Error>>;
@@ -197,7 +199,7 @@ impl ProcessedConfig {
             if i == 0 {
                 if let Some(prefix) = key_decor.prefix() {
                     if !prefix.is_empty() {
-                        section_decor.set_prefix(prefix.clone());
+                        section_decor.set_prefix(prefix);
                         key_decor.set_prefix("".to_string());
                     }
                 }
@@ -225,7 +227,7 @@ impl ProcessedConfig {
                     // Cleanup for next sections.
                     section = Vec::new();
                     section_decor = Decor::default();
-                    section_decor.set_prefix(prefix.clone());
+                    section_decor.set_prefix(prefix);
                     key_decor.set_prefix("".to_string());
                 }
             }
