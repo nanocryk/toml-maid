@@ -60,11 +60,11 @@ pub struct Config {
     #[serde(default)]
     pub inline_keys: Vec<String>,
 
-    /// Does it sort arrays of strings ?
+    /// Does it sort arrays?
     /// In case of mixed types, string will be ordered first, then
     /// other values in original order.
     #[serde(default)]
-    pub sort_string_arrays: bool,
+    pub sort_arrays: bool,
 }
 
 const CONFIG_FILE: &'static str = "toms-maid.toml";
@@ -105,7 +105,7 @@ pub struct ProcessedConfig {
     /// Does it sort arrays of strings ?
     /// In case of mixed types, string will be ordered first, then
     /// other values in original order.
-    pub sort_string_arrays: bool,
+    pub sort_arrays: bool,
 }
 
 impl From<Config> for ProcessedConfig {
@@ -113,7 +113,7 @@ impl From<Config> for ProcessedConfig {
         let mut res = Self {
             keys: BTreeMap::new(),
             inline_keys: BTreeMap::new(),
-            sort_string_arrays: x.sort_string_arrays,
+            sort_arrays: x.sort_arrays,
         };
 
         for (i, key) in x.keys.iter().enumerate() {
@@ -177,6 +177,7 @@ pub fn find_files_recursively(
             }
 
             // We don't format `toms-maid.toml` files as the order is important.
+            // TODO: Still format but override `sort_arrays`.
             if path.file_name() == Some(&config_file) {
                 continue;
             }
@@ -455,7 +456,7 @@ impl ProcessedConfig {
     fn format_array(&self, array: &Array, last: bool) -> Res<Array> {
         let mut values: Vec<_> = array.iter().cloned().collect();
 
-        if self.sort_string_arrays {
+        if self.sort_arrays {
             values.sort_by(|x, y| match (x, y) {
                 (Value::String(x), Value::String(y)) => x.value().cmp(y.value()),
                 (Value::String(_), _) => Ordering::Less,
