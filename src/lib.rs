@@ -43,7 +43,7 @@ struct Entry<T> {
     decor: Decor,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 pub struct Opt {
     /// List of .toml files to format.
     /// If no files are provided, and `--scan-folder` is not used then
