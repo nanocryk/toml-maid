@@ -1,13 +1,11 @@
-use toms_maid::find_files_recursively;
-
 use {
     colored::*,
     structopt::StructOpt,
-    toms_maid::{Config, Opt, ProcessedConfig, Res},
+    toms_maid::{Config, Opt, Res},
 };
 
-fn main() -> Res<()> {
-    let mut opt = Opt::from_args();
+fn main() -> Res {
+    let opt = Opt::from_args();
 
     let config = Config::read_from_file().unwrap_or_else(|| {
         if !opt.silent {
@@ -21,20 +19,5 @@ fn main() -> Res<()> {
         Config::default()
     });
 
-    let config: ProcessedConfig = config.into();
-
-    if opt.files.is_empty() && opt.folder.is_empty() {
-        opt.folder.push(std::env::current_dir()?);
-    }
-
-    for folder in opt.folder {
-        let files = find_files_recursively(folder, "toml", !opt.silent);
-        opt.files.extend(files);
-    }
-
-    for file in opt.files {
-        config.process_file(file, opt.check, !opt.silent)?;
-    }
-
-    Ok(())
+    toms_maid::run(opt, config)
 }

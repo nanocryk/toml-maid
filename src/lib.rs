@@ -15,7 +15,26 @@ use {
 };
 
 /// Type alias for shorter return types.
-pub type Res<T> = Result<T, Box<dyn Error>>;
+pub type Res<T = ()> = Result<T, Box<dyn Error>>;
+
+pub fn run(mut opt: Opt, config: Config) -> Res {
+    let config: ProcessedConfig = config.into();
+
+    if opt.files.is_empty() && opt.folder.is_empty() {
+        opt.folder.push(std::env::current_dir()?);
+    }
+
+    for folder in opt.folder {
+        let files = find_files_recursively(folder, "toml", !opt.silent);
+        opt.files.extend(files);
+    }
+
+    for file in opt.files {
+        config.process_file(file, opt.check, !opt.silent)?;
+    }
+
+    Ok(())
+}
 
 /// A TOML entry. Generic to support both `Item` and `Value` entries.
 struct Entry<T> {
@@ -46,7 +65,7 @@ pub struct Opt {
     pub silent: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GenericConfig<Keys> {
     /// Important keys in non-inline tables.
     /// Will be sorted first, then any non-important keys will be

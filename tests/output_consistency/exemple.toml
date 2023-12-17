@@ -1,0 +1,12 @@
+[foo.bar]
+
+[foo.baz]
+entry = [
+    "foo", # foo
+    "baz"
+    # baz
+    , "foo",
+    # foo
+    "baz",
+    # baz
+]
