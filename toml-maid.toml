@@ -9,3 +9,7 @@ inline_keys = [
 	"version",
 	"features",
 ]
+
+excludes = [
+	"tests/output_consistency/**"
+]

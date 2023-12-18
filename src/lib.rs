@@ -25,7 +25,7 @@ pub fn run(mut opt: Opt, config: Config) -> Res {
     }
 
     for folder in opt.folder {
-        let files = find_files_recursively(folder, "toml", !opt.silent);
+        let files = find_files_recursively(folder, "toml", !opt.silent, &config.excludes);
         opt.files.extend(files);
     }
 
@@ -84,6 +84,10 @@ pub struct GenericConfig<Keys> {
     /// other values in original order.
     #[serde(default)]
     pub sort_arrays: bool,
+
+    #[serde(default)]
+    /// Paths to ignore when scanning directories.
+    pub excludes: Vec<String>,
 }
 
 pub type Config = GenericConfig<Vec<String>>;
@@ -119,6 +123,7 @@ impl From<Config> for ProcessedConfig {
             keys: BTreeMap::new(),
             inline_keys: BTreeMap::new(),
             sort_arrays: x.sort_arrays,
+            excludes: x.excludes,
         };
 
         for (i, key) in x.keys.iter().enumerate() {
@@ -138,9 +143,10 @@ fn absolute_path(path: impl AsRef<Path>) -> Res<String> {
 }
 
 pub fn find_files_recursively(
-    path: impl AsRef<Path>,
+    dir_path: impl AsRef<Path>,
     extension: &str,
     verbose: bool,
+    excludes: &[String],
 ) -> Vec<PathBuf> {
     macro_rules! continue_on_err {
         ($in:expr, $context:expr) => {
@@ -156,12 +162,34 @@ pub fn find_files_recursively(
         };
     }
 
-    let path: PathBuf = path.as_ref().to_owned();
+    let dir_path: PathBuf = dir_path.as_ref().to_owned();
     let mut matches = vec![];
     let extension: OsString = extension.into();
     let config_file: OsString = CONFIG_FILE.into();
 
-    for entry in ignore::WalkBuilder::new(path).skip_stdout(true).build() {
+    let excludes: Vec<_> = excludes
+        .iter()
+        .map(|v| glob::Pattern::new(&v).expect("invalid pattern in 'excludes'"))
+        .collect();
+
+    for entry in ignore::WalkBuilder::new(&dir_path)
+        .skip_stdout(true)
+        .filter_entry(move |entry| {
+            let path = entry.path();
+            let relative_path = path
+                .strip_prefix(&dir_path)
+                .expect("scanned file should be inside scanned dir");
+
+            for exclude in &excludes {
+                if exclude.matches_path(&relative_path) {
+                    return false;
+                }
+            }
+
+            true
+        })
+        .build()
+    {
         let entry = continue_on_err!(entry, "getting file info");
         let file_type =
             continue_on_err!(entry.file_type().ok_or("no file type"), "getting file type");

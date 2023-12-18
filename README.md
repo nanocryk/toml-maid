@@ -34,13 +34,14 @@ Behavior of `toml-maid` can be configured using a `toml-maid.toml` file, which
 can be located in the current path or any parent folder, the first encountered
 being used and others ignored. The options are the following:
 
-- `keys`: array of keys as strings that should be sorted first in non-inline
+- `keys`: list of keys as strings that should be sorted first in non-inline
   tables (`[section]` and `key = { ... }` entries). This can be used to keep
   important entries first.
 - `inline_keys`: same but for inline tables `foo = { key1 = .., key2 = ..}`.
 - `sort-arrays`: boolean telling if arrays should be sorted. Should only be used
   if order is not important, for exemple is suitable to keep `Cargo.toml`
   list of features ordered.
+- `excludes`: list of patterns to ignore when scanning directories
 
 ## TODOs
 
