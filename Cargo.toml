@@ -1,8 +1,11 @@
 [package]
-authors = [ "nanocryk" ]
-edition = "2021"
 name = "toml-maid"
 version = "0.1.0"
+authors = [ "nanocryk" ]
+description = "Keep your TOML files clean"
+edition = "2021"
+license = "GPL-3.0"
+repository = "https://github.com/nanocryk/toml-maid"
 
 [dependencies]
 # Config loading
