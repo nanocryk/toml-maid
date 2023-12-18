@@ -89,7 +89,7 @@ pub struct GenericConfig<Keys> {
 pub type Config = GenericConfig<Vec<String>>;
 pub type ProcessedConfig = GenericConfig<BTreeMap<String, usize>>;
 
-const CONFIG_FILE: &'static str = "toml-maid.toml";
+const CONFIG_FILE: &str = "toml-maid.toml";
 
 impl Config {
     pub fn read_from_file() -> Option<Config> {
@@ -222,17 +222,15 @@ impl ProcessedConfig {
             } else if verbose {
                 println!("Check succeed: {}", absolute_path.green());
             }
-        } else {
-            if text != output_text {
-                let mut file = File::create(&path)?;
-                file.write_all(output_text.as_bytes())?;
-                file.flush()?;
-                if verbose {
-                    println!("Overwritten: {}", absolute_path.blue());
-                }
-            } else if verbose {
-                println!("Unchanged: {}", absolute_path.green());
+        } else if text != output_text {
+            let mut file = File::create(&path)?;
+            file.write_all(output_text.as_bytes())?;
+            file.flush()?;
+            if verbose {
+                println!("Overwritten: {}", absolute_path.blue());
             }
+        } else if verbose {
+            println!("Unchanged: {}", absolute_path.green());
         }
 
         Ok(())
@@ -283,7 +281,7 @@ impl ProcessedConfig {
             // It means it is a new section, and sorting must not cross
             // section boundaries.
             else if let Some(prefix) = key_decor.prefix() {
-                if prefix.starts_with("\n") {
+                if prefix.starts_with('\n') {
                     // Sort keys and insert them.
                     section.sort_by(sort);
 
@@ -315,7 +313,7 @@ impl ProcessedConfig {
             // Format inner item.
             let new_item = match item {
                 Item::None => Item::None,
-                Item::Value(inner) => Item::Value(self.format_value(&inner, false)?),
+                Item::Value(inner) => Item::Value(self.format_value(inner, false)?),
                 Item::Table(inner) => Item::Table(self.format_table(inner)?),
                 // TODO : Doesn't seem we have any of those.
                 Item::ArrayOfTables(inner) => Item::ArrayOfTables(inner.clone()),
@@ -428,15 +426,15 @@ impl ProcessedConfig {
                 // could be multiline literals.
                 // Doesn't modify strings containing \ or "
                 let mut display = v.clone().decorated("", "").to_string();
-                if display.starts_with("'")
+                if display.starts_with('\'')
                     && !display.starts_with("''")
                     && display.find(&['\\', '"'][..]).is_none()
                 {
-                    if let Some(s) = display.strip_prefix("'") {
+                    if let Some(s) = display.strip_prefix('\'') {
                         display = s.to_string();
                     }
 
-                    if let Some(s) = display.strip_suffix("'") {
+                    if let Some(s) = display.strip_suffix('\'') {
                         display = s.to_string();
                     }
 
@@ -447,7 +445,7 @@ impl ProcessedConfig {
                 if last {
                     v.decorated(&format!("{} ", prefix), &format!("{} ", suffix))
                 } else {
-                    v.decorated(&format!("{} ", prefix), &format!("{}", suffix))
+                    v.decorated(&format!("{} ", prefix), &suffix.to_string())
                 }
             }
         })
@@ -476,18 +474,18 @@ impl ProcessedConfig {
             new_array.push_formatted(value);
         }
 
-        let mut multiline = array.trailing().starts_with("\n");
+        let mut multiline = array.trailing().starts_with('\n');
         if !multiline {
             for item in array.iter() {
                 if let Some(prefix) = item.decor().prefix() {
-                    if prefix.contains("\n") {
+                    if prefix.contains('\n') {
                         multiline = true;
                         break;
                     }
                 }
 
                 if let Some(suffix) = item.decor().suffix() {
-                    if suffix.contains("\n") {
+                    if suffix.contains('\n') {
                         multiline = true;
                         break;
                     }
@@ -502,7 +500,7 @@ impl ProcessedConfig {
                 array.trailing().trim_matches(&[' ', '\t'][..]).trim_end()
             );
 
-            if !trailing.starts_with("\n") {
+            if !trailing.starts_with('\n') {
                 trailing = format!(" {trailing}");
             }
 
@@ -523,7 +521,7 @@ impl ProcessedConfig {
                     "\n\t".to_string()
                 };
 
-                if !prefix.starts_with("\n") {
+                if !prefix.starts_with('\n') {
                     prefix = format!(" {prefix}");
                 }
 
@@ -540,7 +538,7 @@ impl ProcessedConfig {
                     suffix.push('\n');
                 }
 
-                let formatted_value = self.format_value(&value, false)?;
+                let formatted_value = self.format_value(value, false)?;
                 *value = formatted_value.decorated(&prefix, &suffix);
             }
         }
@@ -551,7 +549,7 @@ impl ProcessedConfig {
 
             let len = new_array.len();
             for (i, value) in new_array.iter_mut().enumerate() {
-                *value = self.format_value(&value, i + 1 == len)?;
+                *value = self.format_value(value, i + 1 == len)?;
             }
         }
 
