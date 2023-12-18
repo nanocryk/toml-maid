@@ -1,6 +1,4 @@
-# Tom's Maid
-
-Keep your TOML files clean thanks to Tom's maid.
+# Toml Maid - Keep your TOML files clean
 
 This formatter tries to apply an opinionated consistent formatting style.
 

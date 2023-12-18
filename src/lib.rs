@@ -89,7 +89,7 @@ pub struct GenericConfig<Keys> {
 pub type Config = GenericConfig<Vec<String>>;
 pub type ProcessedConfig = GenericConfig<BTreeMap<String, usize>>;
 
-const CONFIG_FILE: &'static str = "toms-maid.toml";
+const CONFIG_FILE: &'static str = "toml-maid.toml";
 
 impl Config {
     pub fn read_from_file() -> Option<Config> {
@@ -181,7 +181,7 @@ pub fn find_files_recursively(
                 continue;
             }
 
-            // We don't format `toms-maid.toml` files as the order is important.
+            // We don't format `toml-maid.toml` files as the order is important.
             // TODO: Still format but override `sort_arrays`.
             if path.file_name() == Some(&config_file) {
                 continue;

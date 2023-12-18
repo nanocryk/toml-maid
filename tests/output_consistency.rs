@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 
-use toms_maid::{Config, Opt};
+use toml_maid::{Config, Opt};
 
 #[test]
 fn ensure_output_consistency() {
@@ -30,7 +30,7 @@ fn ensure_output_consistency() {
             silent: true,
         };
 
-        toms_maid::run(opt.clone(), config.clone()).expect("to run without errors");
+        toml_maid::run(opt.clone(), config.clone()).expect("to run without errors");
 
         // We now check that the result matches the expectations
         let expected_path = file.path().with_extension("toml.out");
@@ -40,12 +40,11 @@ fn ensure_output_consistency() {
         assert_eq!(output, expected, "formatter output should match expected");
 
         // Rerun formatter to ensure formatting is stable
-        toms_maid::run(opt.clone(), config.clone()).expect("to run without errors");
+        toml_maid::run(opt.clone(), config.clone()).expect("to run without errors");
 
         let output = std::fs::read(&test_file).expect("to read test file");
         assert_eq!(output, expected, "formatter output is not stable");
 
         std::fs::remove_file(&test_file).expect("to be able to delete test file");
-
     }
 }

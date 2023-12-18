@@ -1,7 +1,7 @@
 use {
     colored::*,
     structopt::StructOpt,
-    toms_maid::{Config, Opt, Res},
+    toml_maid::{Config, Opt, Res},
 };
 
 fn main() -> Res {
@@ -11,7 +11,7 @@ fn main() -> Res {
         if !opt.silent {
             println!(
                 "{}",
-                "No 'toms-maid.toml' in this directory and its parents, using default config.\n"
+                "No 'toml-maid.toml' in this directory and its parents, using default config.\n"
                     .yellow()
             );
         }
@@ -19,5 +19,5 @@ fn main() -> Res {
         Config::default()
     });
 
-    toms_maid::run(opt, config)
+    toml_maid::run(opt, config)
 }

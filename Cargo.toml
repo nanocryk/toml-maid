@@ -1,13 +1,13 @@
 [package]
 authors = [ "nanocryk" ]
 edition = "2021"
-name = "toms-maid"
+name = "toml-maid"
 version = "0.1.0"
 
 [dependencies]
 # Config loading
 serde = { version = "1.0.130", features = [ "derive" ] }
-toml = "0.5.8" # Parse `toml-sort.toml` file
+toml = "0.5.8" # Parse `toml-maid.toml` file
 
 # CLI stuff
 colored = "2.0.0"

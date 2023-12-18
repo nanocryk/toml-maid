@@ -274,6 +274,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml-maid"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "serde",
+ "structopt",
+ "toml",
+ "toml_edit",
+]
+
+[[package]]
 name = "toml_edit"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -283,17 +294,6 @@ dependencies = [
  "indexmap",
  "itertools",
  "kstring",
-]
-
-[[package]]
-name = "toms-maid"
-version = "0.1.0"
-dependencies = [
- "colored",
- "serde",
- "structopt",
- "toml",
- "toml_edit",
 ]
 
 [[package]]
