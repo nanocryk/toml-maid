@@ -1,0 +1,2 @@
+# toml-maid should not scan output_consistency
+tests/output_consistency

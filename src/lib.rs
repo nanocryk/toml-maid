@@ -158,37 +158,32 @@ pub fn find_files_recursively(
 
     let path: PathBuf = path.as_ref().to_owned();
     let mut matches = vec![];
-    let mut pending_directories = vec![path];
     let extension: OsString = extension.into();
     let config_file: OsString = CONFIG_FILE.into();
 
-    while let Some(dir_path) = pending_directories.pop() {
-        let entries = continue_on_err!(std::fs::read_dir(&dir_path), "reading directory");
+    for entry in ignore::WalkBuilder::new(path).skip_stdout(true).build() {
+        let entry = continue_on_err!(entry, "getting file info");
+        let file_type =
+            continue_on_err!(entry.file_type().ok_or("no file type"), "getting file type");
+        let path = entry.path().to_owned();
 
-        for entry in entries {
-            let entry = continue_on_err!(entry, "getting file info");
-            let file_type = continue_on_err!(entry.file_type(), "getting file type");
-            let path = entry.path();
-
-            // If directory, we add it to the list of pending directories
-            if file_type.is_dir() {
-                pending_directories.push(path);
-                continue;
-            }
-
-            // We ignore non .toml files
-            if path.extension() != Some(&extension) {
-                continue;
-            }
-
-            // We don't format `toml-maid.toml` files as the order is important.
-            // TODO: Still format but override `sort_arrays`.
-            if path.file_name() == Some(&config_file) {
-                continue;
-            }
-
-            matches.push(path);
+        // We ignore directories, as `ignore::Walk` performs the recursive search.
+        if file_type.is_dir() {
+            continue;
         }
+
+        // We ignore non .toml files
+        if path.extension() != Some(&extension) {
+            continue;
+        }
+
+        // We don't format `toml-maid.toml` files as the order is important.
+        // TODO: Still format but override `sort_arrays`.
+        if path.file_name() == Some(&config_file) {
+            continue;
+        }
+
+        matches.push(path);
     }
 
     matches
