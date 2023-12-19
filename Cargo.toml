@@ -19,6 +19,6 @@ colored = "2.0.0"
 structopt = "0.3.25"
 
 # TOML handling
-toml_edit = "0.9.1" # Edit TOML files
+toml_edit = "0.21.0" # Edit TOML files
 
 # Running `cargo run -- ./Cargo.toml --check` should succeed.

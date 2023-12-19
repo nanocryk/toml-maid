@@ -11,7 +11,7 @@ use {
         path::{Path, PathBuf},
     },
     structopt::StructOpt,
-    toml_edit::{Array, Decor, Document, InlineTable, Item, Table, Value},
+    toml_edit::{Array, Decor, Document, InlineTable, Item, RawString, Table, Value},
 };
 
 /// Type alias for shorter return types.
@@ -231,7 +231,7 @@ impl ProcessedConfig {
         });
 
         let doc = text.parse::<Document>()?;
-        let trailing = doc.trailing().trim_end();
+        let trailing = doc.trailing().as_some_str().trim_end();
 
         let output_table = self.format_table(&doc)?;
         let mut output_doc: Document = output_table.into();
@@ -266,8 +266,16 @@ impl ProcessedConfig {
     fn format_table(&self, table: &Table) -> Res<Table> {
         let mut formated_table = Table::new();
         formated_table.set_implicit(true); // avoid empty `[dotted.keys]`
-        let prefix = table.decor().prefix().unwrap_or("");
-        let suffix = table.decor().suffix().unwrap_or("");
+        let prefix = table
+            .decor()
+            .prefix()
+            .map(|s| s.as_some_str())
+            .unwrap_or("");
+        let suffix = table
+            .decor()
+            .suffix()
+            .map(|s| s.as_some_str())
+            .unwrap_or("");
         formated_table.decor_mut().set_prefix(prefix);
         formated_table.decor_mut().set_suffix(suffix);
 
@@ -294,6 +302,7 @@ impl ProcessedConfig {
             // In that case we want to keep that decoration at the start of the section.
             if i == 0 {
                 if let Some(prefix) = key_decor.prefix() {
+                    let prefix = prefix.as_some_str();
                     if !prefix.is_empty() {
                         section_decor.set_prefix(prefix);
                         key_decor.set_prefix("".to_string());
@@ -304,6 +313,7 @@ impl ProcessedConfig {
             // It means it is a new section, and sorting must not cross
             // section boundaries.
             else if let Some(prefix) = key_decor.prefix() {
+                let prefix = prefix.as_some_str();
                 if prefix.starts_with('\n') {
                     // Sort keys and insert them.
                     section.sort_by(sort);
@@ -312,6 +322,7 @@ impl ProcessedConfig {
                         // Add section prefix.
                         if i == 0 {
                             if let Some(prefix) = section_decor.prefix() {
+                                let prefix = prefix.as_some_str();
                                 entry.decor.set_prefix(prefix);
                             }
                         }
@@ -330,6 +341,7 @@ impl ProcessedConfig {
 
             // Remove any trailing newline in decor suffix.
             if let Some(suffix) = key_decor.suffix().map(|x| x.to_owned()) {
+                let suffix = suffix.as_some_str();
                 key_decor.set_suffix(suffix.trim_end_matches('\n'));
             }
 
@@ -356,6 +368,7 @@ impl ProcessedConfig {
             // Add section prefix.
             if i == 0 {
                 if let Some(prefix) = section_decor.prefix() {
+                    let prefix = prefix.as_some_str();
                     entry.decor.set_prefix(prefix);
                 }
             }
@@ -428,7 +441,11 @@ impl ProcessedConfig {
                 let mut v = v.clone();
 
                 // Keep existing prefix/suffix with correct format.
-                let prefix = v.decor().prefix().map(|x| x.trim()).unwrap_or("");
+                let prefix = v
+                    .decor()
+                    .prefix()
+                    .map(|x| x.as_some_str().trim())
+                    .unwrap_or("");
 
                 let prefix = if prefix.is_empty() {
                     prefix.to_string()
@@ -436,7 +453,11 @@ impl ProcessedConfig {
                     format!(" {}", prefix)
                 };
 
-                let suffix = v.decor().suffix().map(|x| x.trim()).unwrap_or("");
+                let suffix = v
+                    .decor()
+                    .suffix()
+                    .map(|x| x.as_some_str().trim())
+                    .unwrap_or("");
 
                 let suffix = if suffix.is_empty() {
                     suffix.to_string()
@@ -497,18 +518,18 @@ impl ProcessedConfig {
             new_array.push_formatted(value);
         }
 
-        let mut multiline = array.trailing().starts_with('\n');
+        let mut multiline = array.trailing().as_some_str().starts_with('\n');
         if !multiline {
             for item in array.iter() {
                 if let Some(prefix) = item.decor().prefix() {
-                    if prefix.contains('\n') {
+                    if prefix.as_some_str().contains('\n') {
                         multiline = true;
                         break;
                     }
                 }
 
                 if let Some(suffix) = item.decor().suffix() {
-                    if suffix.contains('\n') {
+                    if suffix.as_some_str().contains('\n') {
                         multiline = true;
                         break;
                     }
@@ -520,7 +541,11 @@ impl ProcessedConfig {
         if multiline {
             let mut trailing = format!(
                 "{}\n",
-                array.trailing().trim_matches(&[' ', '\t'][..]).trim_end()
+                array
+                    .trailing()
+                    .as_some_str()
+                    .trim_matches(&[' ', '\t'][..])
+                    .trim_end()
             );
 
             if !trailing.starts_with('\n') {
@@ -534,6 +559,7 @@ impl ProcessedConfig {
                 let prefix = value
                     .decor()
                     .prefix()
+                    .map(|s| s.as_some_str())
                     .unwrap_or("")
                     .trim_matches(&[' ', '\t'][..])
                     .trim_end_matches('\n');
@@ -551,6 +577,7 @@ impl ProcessedConfig {
                 let mut suffix = value
                     .decor()
                     .suffix()
+                    .map(|s| s.as_some_str())
                     .unwrap_or("")
                     .trim_matches(&[' ', '\t', '\n'][..])
                     .to_string();
@@ -582,5 +609,18 @@ impl ProcessedConfig {
             .set_suffix(if last { " " } else { "" });
 
         Ok(new_array)
+    }
+}
+
+trait RawStringExt {
+    fn as_some_str(&self) -> &str;
+}
+
+impl RawStringExt for RawString {
+    fn as_some_str(&self) -> &str {
+        self.as_str().expect(
+            "parsed documents should not be spanned, which means `as_str` should \
+            always return Some(_)",
+        )
     }
 }
